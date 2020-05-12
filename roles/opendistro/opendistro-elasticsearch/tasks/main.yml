@@ -5,6 +5,13 @@
 - import_tasks: RedHat.yml
   when: ansible_os_family == 'RedHat'
 
+- name: Install OpenDistro dependencies
+  package:
+    name:
+      - wget
+      - unzip
+    state: present
+
 - name: Install OpenDistro
   package:
     name: opendistroforelasticsearch-{{ opendistro_version }} 

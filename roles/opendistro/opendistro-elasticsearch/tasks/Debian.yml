@@ -1,0 +1,59 @@
+---
+- block:
+  - name: Debian/Ubuntu | Install apt-transport-https and ca-certificates
+    apt:
+      name:
+        - apt-transport-https
+        - ca-certificates
+      state: present
+    register: opendistro_ca_packages_installed
+    until: opendistro_ca_packages_installed is succeeded
+
+  - name: Update and upgrade apt packages
+    become: true
+    apt:
+      upgrade: yes
+      update_cache: yes
+      cache_valid_time: 86400 #One day
+    when:
+      - ansible_distribution == "Ubuntu"
+      - ansible_distribution_major_version | int == 14
+
+  - name: RedHat/CentOS/Fedora | Add OpenDistro repo
+    yum_repository:
+      file: opendistro
+      name: opendistro_repo
+      description: Opendistro yum repository
+      baseurl: "{{ package_repos.yum.opendistro.baseurl }}"
+      gpgkey: "{{ package_repos.yum.opendistro.gpg }}"
+      gpgcheck: true
+    changed_when: false
+
+  - name: RedHat/CentOS/Fedora | Add Elasticsearch-oss repo
+    yum_repository:
+      file: opendistro
+      name: elasticsearch_oss_repo
+      description: Elasticsearch-oss yum repository
+      baseurl: "{{ package_repos.yum.elasticsearch_oss.baseurl }}"
+      gpgkey: "{{ package_repos.yum.elasticsearch_oss.gpg }}"
+      gpgcheck: true
+    changed_when: false
+
+  - name: RedHat/CentOS/Fedora | Install OpenJDK 11
+    yum:
+      name: java-11-openjdk-devel 
+      state: present
+
+  - name: Debian/Ubuntu | Add OpenDistro GPG key.
+    apt_key:
+      url: "{{ opendistro.gpg }}"
+      id: "{{ opendistro.key_id }}"
+      state: present
+
+  - name: Debian/Ubuntu | Install Elastic repo
+    apt_repository:
+      repo: "deb {{ opendistro.apt }} stable main"
+      state: present
+      filename: 'elastic_repo_7'
+      update_cache: true
+    changed_when: false
